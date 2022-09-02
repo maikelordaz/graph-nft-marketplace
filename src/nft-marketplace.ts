@@ -1,55 +1,60 @@
-import { BigInt } from "@graphprotocol/graph-ts"
+// tipos de variables
+import { Address, BigInt } from "@graphprotocol/graph-ts";
 import {
-  NFTMarketplace,
-  ItemBought,
-  ItemCanceled,
-  ItemListed
+  // Escribo as Item***** para que sea un poco mas facil de leer despues
+  ItemBought as ItemBoughtEvent,
+  ItemCanceled as ItemCanceledEvent,
+  ItemListed as ItemListedEvent
 } from "../generated/NFTMarketplace/NFTMarketplace"
-import { ExampleEntity } from "../generated/schema"
+import {ActiveItem, ItemListed, ItemBought, ItemCanceled, ActiveItem} from "../generated/schema"
 
-export function handleItemBought(event: ItemBought): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+export function handleItemBought(event: ItemBoughtEvent): void {
+  /*
+  * Cada vez que listee un item necesito guardarlo en el graph
+  * Actualizar ActiveItem
+  * Tomar o crear el itemListed object
+  * Cada item tiene un ID unico
+  * 
+  * ItemBoughtEvent -> el evento
+  * ItemBoughtObject: Lo que guardo
+  * 
+  * ItemBoughtObject y ItemBoughtEvent son tipos distintos y son auto creados en schema y hay 
+  * que importarlos
+  * 
+  * Necesito crear un ItemBoughtObject del ItemBought Event
+  */
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
-
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
+  // Con .load cargo el ID unico segun los parametros dados
+  let itemBought = ItemBought.load(
+    getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+    )
+  // No importa que sea el mismo ID porque esta en tipos distintos. 
+  let activeItem = ActiveItem.load(
+    getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+  )
+  if (!itemBought) {
+    itemBought = new ItemBought(
+      getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+    )
   }
+  // Actualizo cada parametro de ItemBought
+  itemBought.buyer = event.params.buyer
+  itemBought.nftAddress = event.params.nftAddress
+  itemBought.tokenId = event.params.tokenId
+  // El ! significa que tendremos un activeItem. Si hay un comprador significa que lo compraron
+  activeItem!.buyer = event.params.buyer
 
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
+  itemBought.save()
+  activeItem!.save()
 
-  // Entity fields can be set based on event parameters
-  entity.buyer = event.params.buyer
-  entity.nftAddress = event.params.nftAddress
-
-  // Entities can be written to the store with `.save()`
-  entity.save()
-
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
-
-  // It is also possible to access smart contracts from mappings. For
-  // example, the contract that has emitted the event can be connected to
-  // with:
-  //
-  // let contract = Contract.bind(event.address)
-  //
-  // The following functions can then be called on this contract to access
-  // state variables and other data:
-  //
-  // - contract.getListing(...)
-  // - contract.getProceeds(...)
 }
 
-export function handleItemCanceled(event: ItemCanceled): void {}
+export function handleItemCanceled(event: ItemCanceledEvent): void {}
 
-export function handleItemListed(event: ItemListed): void {}
+export function handleItemListed(event: ItemListedEvent): void {}
+
+//function nombreFuncion(parametro: tipo de parametro): tipoDeRetorno {}
+
+function getIdFromEventParams(tokenId: BigInt, nftAddress: Address): string {
+  return tokenId.toHexString() + nftAddress.toHexString()
+}
