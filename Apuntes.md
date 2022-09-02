@@ -38,4 +38,25 @@ comience a escuchar eventos justo antes de que se creara mi contrato. Esto lo es
       abi: NFTMarketplace
       startBlock: 11301902
 
-Con esto esta todo listo para hacer deploy a The Graph
+Con esto esta todo listo para hacer deploy a The Graph. Voy a mi dashboard en la pagina
+y sigo las instrucciones y comandos que estan a la derecha en la seccion de AUTH & DEPLOY
+Cuando corra el ultimo comando que es el deploy como tal
+
+> graph deploy --studio nft-marketplace
+
+Me va a pedir una version. Cuando hago el deploy incluso lo sube a IPFS y me da el CID donde dice
+
+✔ Upload subgraph to IPFS
+
+Build completed: QmUQSAaRsEGAVJRRRJpmD4S7BLC8heSTkZZe4Rc3SNZ2Y9
+
+Luego si voy a mi dashboard voy a ver status deployed
+
+En el dashboard en Logs puedo ver si algo sale mal. Y en playground puedo correr solicitudes o "Queries" donde puedo ver diferentes eventos y respuestas de mi graphql para probarlo corro
+algun script en mi backend. En este caso que le hice deploy a rinkeby debo correr el script en
+Rinkeby
+
+> yarn hardhat run scripts/mint-and-list.js --network rinkeby
+
+Una vez listeado el NFT deberia emitir un evento y deberia ver en mi dashboard un ItemListed
+y un ActiveItem
