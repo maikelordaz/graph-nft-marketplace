@@ -6,7 +6,7 @@ import {
   ItemCanceled as ItemCanceledEvent,
   ItemListed as ItemListedEvent
 } from "../generated/NFTMarketplace/NFTMarketplace"
-import {ActiveItem, ItemListed, ItemBought, ItemCanceled, ActiveItem} from "../generated/schema"
+import {ActiveItem, ItemListed, ItemBought, ItemCanceled} from "../generated/schema"
 
 export function handleItemBought(event: ItemBoughtEvent): void {
   /*
@@ -49,9 +49,63 @@ export function handleItemBought(event: ItemBoughtEvent): void {
 
 }
 
-export function handleItemCanceled(event: ItemCanceledEvent): void {}
+export function handleItemCanceled(event: ItemCanceledEvent): void {
+  let itemCanceled = ItemCanceled.load(
+    getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+  )
+  let activeItem = ActiveItem.load(
+    getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+  )
+  if(!itemCanceled) {
+    itemCanceled = new ItemCanceled(
+      getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+    )
+  }
+  itemCanceled.seller = event.params.seller
+  itemCanceled.nftAddress = event.params.nftAddress
+  itemCanceled.tokenId = event.params.tokenId
+  // Actualizo mi activeItem con la direccion muerta. Si la tiene quiere decir que fue cancelado
+  activeItem!.buyer = Address.fromString("0x000000000000000000000000000000000000dEaD")
 
-export function handleItemListed(event: ItemListedEvent): void {}
+  itemCanceled.save()
+  activeItem!.save()
+}
+
+export function handleItemListed(event: ItemListedEvent): void {
+  let itemListed = ItemListed.load(
+    getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+)
+let activeItem = ActiveItem.load(
+  getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+)
+  if(!itemListed) {
+    itemListed = new ItemListed(
+      getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+    )
+  }
+  if(!activeItem) {
+    activeItem = new ActiveItem(
+      getIdFromEventParams(event.params.tokenId, event.params.nftAddress)
+    )
+  }
+  itemListed.seller = event.params.seller
+  activeItem.seller = event.params.seller
+
+  itemListed.nftAddress = event.params.nftAddress
+  activeItem.nftAddress = event.params.nftAddress
+
+  itemListed.tokenId = event.params.tokenId
+  activeItem.tokenId = event.params.tokenId
+
+  itemListed.price = event.params.price
+  activeItem.price = event.params.price
+
+  // Si tiene la direccion 0 quiere decir que esta en el mercado y no ha sido comprado
+  activeItem.buyer = Address.fromString("0x0000000000000000000000000000000000000000")
+  
+  itemListed.save()
+  activeItem.save()
+}
 
 //function nombreFuncion(parametro: tipo de parametro): tipoDeRetorno {}
 
